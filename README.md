@@ -1,26 +1,24 @@
 # Budget Tracker
 
-A personal budget tracking web application similar to Intuit Mint, designed to help you manage your finances by connecting to your bank accounts and credit cards, automatically fetching transactions, and providing insights into your spending habits.
+This project recreates Plaid's [Transactions tutorial](https://github.com/plaid/tutorial-resources/tree/main/transactions/finished) with a Python/FastAPI backend instead of the original Node.js server. The sample frontend remains a lightweight vanilla JavaScript page that mirrors the tutorial experience: launch Plaid Link, exchange the resulting public token, and show recent transactions returned from Plaid.
 
 ## Features
 
-- **Bank Account Integration**: Connect multiple bank accounts and credit card accounts via Plaid API
-- **Automatic Transaction Fetching**: Automatically retrieve and store all transactions from connected accounts
-- **Transaction Management**: View, categorize, and manage all your financial transactions in one place
-- **Budget Tracking**: Monitor your spending and track your budget across different categories
-- **Secure Data Storage**: All transaction data is stored locally in a SQLite database
+- **Launch Plaid Link** with a demo `demo-user` identifier
+- **Exchange public tokens** for access tokens using the Plaid Python SDK
+- **Fetch recent transactions** from the Transactions product and render them in a simple table
+- **Stateless sample storage** that keeps access tokens in memory for local development only
 
 ## Tech Stack
 
 ### Backend
-- **Python 3.x**: Core programming language
-- **FastAPI**: Modern, fast web framework for building APIs
-- **SQLAlchemy**: SQL toolkit and Object-Relational Mapping (ORM) library
-- **SQLite**: Lightweight, file-based database for local data storage
-- **Plaid API**: Financial services API for connecting bank accounts
+- Python 3.8+
+- FastAPI
+- Plaid Python SDK
 
 ### Frontend
-- **Vue.js**: Progressive JavaScript framework for building user interfaces
+- Vanilla JavaScript
+- Plaid Link JavaScript SDK
 
 ## Project Structure
 
@@ -28,20 +26,18 @@ A personal budget tracking web application similar to Intuit Mint, designed to h
 budget-tracker/
 ├── backend/          # FastAPI backend application
 │   ├── app/
-│   │   ├── main.py   # FastAPI application entry point
-│   │   ├── models/   # SQLAlchemy database models
-│   │   ├── schemas/  # Pydantic schemas for API validation
-│   │   ├── api/      # API route handlers
-│   │   └── services/ # Business logic and Plaid integration
-│   ├── requirements.txt
-│   └── database.db   # SQLite database file
-├── frontend/         # Vue.js frontend application
-│   ├── src/
-│   │   ├── components/
-│   │   ├── views/
-│   │   ├── services/
-│   │   └── main.js
-│   └── package.json
+│   │   ├── main.py           # FastAPI application entry point
+│   │   ├── config.py         # Environment configuration
+│   │   ├── plaid_client.py   # Plaid client helper
+│   │   ├── schemas/          # Pydantic schemas for API validation
+│   │   └── storage.py        # In-memory token storage
+│   ├── .env.example          # Sample backend environment configuration
+│   └── requirements.txt
+├── frontend/         # Vanilla JS frontend mirroring the Plaid tutorial
+│   ├── config.example.js     # Sample frontend configuration
+│   ├── index.html            # Main HTML page
+│   ├── index.js              # Plaid Link + API interactions
+│   └── styles.css            # Basic styling for the demo UI
 ├── .gitignore
 └── README.md
 ```
@@ -49,9 +45,8 @@ budget-tracker/
 ## Prerequisites
 
 - Python 3.8 or higher
-- Node.js 16.x or higher
-- npm or yarn package manager
 - Plaid API credentials (Client ID, Secret, and Environment)
+- A static file server for the frontend (e.g., `python -m http.server`)
 
 ## Getting Started
 
@@ -62,7 +57,7 @@ budget-tracker/
    cd backend
    ```
 
-2. Create a virtual environment:
+2. Create a virtual environment and activate it:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -73,122 +68,58 @@ budget-tracker/
    pip install -r requirements.txt
    ```
 
-4. Set up environment variables:
-   Create a `.env` file in the backend directory with your Plaid credentials:
-   ```
-   PLAID_CLIENT_ID=your_client_id
-   PLAID_SECRET=your_secret
-   PLAID_ENV=sandbox  # or 'development' or 'production'
-   DATABASE_URL=sqlite:///./database.db
-   ```
-
-5. Run database migrations (if applicable):
+4. Copy the example environment file and fill in your Plaid credentials:
    ```bash
-   alembic upgrade head
+   cp .env.example .env
    ```
 
-6. Start the FastAPI server:
+5. Start the FastAPI server:
    ```bash
    uvicorn app.main:app --reload
    ```
 
-   The API will be available at `http://localhost:8000`
-   API documentation will be available at `http://localhost:8000/docs`
+   The API will be available at `http://localhost:8000` and the interactive docs at `http://localhost:8000/docs`.
 
-### Frontend Setup
+### Frontend Setup (Vanilla JS)
 
 1. Navigate to the frontend directory:
    ```bash
    cd frontend
    ```
 
-2. Install dependencies:
+2. (Optional) Copy the sample configuration if you need to override the backend URL:
    ```bash
-   npm install
+   cp config.example.js config.js
    ```
+   By default the frontend expects the FastAPI server at `http://localhost:8000`.
 
-3. Create a `.env` file in the frontend directory:
-   ```
-   VUE_APP_API_URL=http://localhost:8000
-   ```
-
-4. Start the development server:
+3. Serve the static files using your tool of choice. For example, with Python:
    ```bash
-   npm run serve
+   python -m http.server 3000
    ```
 
-   The frontend will be available at `http://localhost:8080`
+4. Open the app in your browser at `http://localhost:3000`.
 
 ## Usage
 
-1. **Connect Bank Accounts**: Use the Plaid Link flow to securely connect your bank accounts and credit cards
-2. **Fetch Transactions**: The app will automatically fetch and store all transactions from connected accounts
-3. **View Transactions**: Browse and filter your transactions by date, category, or account
-4. **Track Budget**: Set budget limits and monitor your spending across different categories
+1. Click **Connect a bank account** to start the Plaid Link flow.
+2. Complete the Plaid sandbox login to authorize the sample item.
+3. The backend exchanges the public token for an access token and stores it in memory.
+4. Click **Refresh transactions** to re-fetch the latest transaction data. The demo always uses the `demo-user` identifier for simplicity.
 
 ## API Endpoints
 
-- `GET /api/accounts` - List all connected accounts
-- `POST /api/accounts/link` - Initiate Plaid Link flow
-- `GET /api/transactions` - Retrieve all transactions
-- `POST /api/transactions/sync` - Sync transactions from Plaid
-- `GET /api/transactions/{id}` - Get specific transaction details
-
-## Database Schema
-
-The SQLite database stores:
-- **Accounts**: Connected bank and credit card accounts
-- **Transactions**: All financial transactions with details (amount, date, category, description)
-- **Categories**: Transaction categories for budgeting
-
-## Development
-
-### Running Tests
-
-Backend tests:
-```bash
-cd backend
-pytest
-```
-
-Frontend tests:
-```bash
-cd frontend
-npm run test:unit
-```
-
-### Code Style
-
-Backend uses Black for code formatting:
-```bash
-cd backend
-black .
-```
-
-Frontend uses ESLint:
-```bash
-cd frontend
-npm run lint
-```
+- `GET /api/health` — Simple health-check endpoint
+- `POST /api/create_link_token` — Creates a link token for the Plaid Link flow
+- `POST /api/set_access_token` — Exchanges the public token for an access token and stores it in memory
+- `GET /api/transactions?user_id=demo-user` — Retrieves the latest transactions for the specified user
 
 ## Security Notes
 
-- Never commit your Plaid API credentials to version control
-- Keep your `.env` files local and add them to `.gitignore`
-- Use environment variables for all sensitive configuration
-- The SQLite database contains sensitive financial data - ensure proper file permissions
+- Never commit your Plaid API credentials to version control.
+- Keep your `.env` files local and add them to `.gitignore`.
+- This sample stores tokens in memory and is suitable for local experimentation only.
 
 ## License
 
-This is a personal project for individual use.
-
-## Contributing
-
-This is a personal budget tracking application. Contributions and suggestions are welcome!
-
-## Acknowledgments
-
-- [Plaid](https://plaid.com/) for providing the financial services API
-- [FastAPI](https://fastapi.tiangolo.com/) for the excellent web framework
-- [Vue.js](https://vuejs.org/) for the progressive JavaScript framework
-
+This is a sample application for educational use.
